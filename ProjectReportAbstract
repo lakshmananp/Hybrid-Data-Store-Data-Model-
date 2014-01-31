@@ -1,0 +1,583 @@
+Group No. 27Group Members:
+
+PrasanthIyer
+
+LakshmananPalaniappan
+
+SaumilKasbekar
+
+AswinRajkumar
+
+
+1)A relational database schema
+2)A set of queries that are expected to run on the 
+database.
+
+
+Problem Definition
+Design an algorithm for an hybrid data store that 
+takes as input:-
+
+An optimal mapping to physical storage of the data 
+contained in the database.
+And Provides as output:-
+So, what is an hybrid data store?
+
+Problem Definition
+Let’s start with a simple relational database table:-
+
+
+An hybrid data store?
+Problem Definition
+How is this table physically stored on disk?
+
+2 Approaches:
+1)Row Store-Tuplesare stored one row after another.
+-Query execution proceeds by scanning the table 
+row after row. 
+Eg-> Select Product From Table Where Sales 
+= 1250.
+-Oracle, SQL Server
+
+
+
+An hybrid data store?
+
+Problem Definition
+
+How is this table physically stored on disk?
+2 Approaches:
+2)Column Store-Tuplesare stored one column after another. 
+The start of each column is stored along with 
+the row ID for each row.
+-Query execution proceeds by scanning the table 
+column by column and then joining based on 
+the row ID.
+Eg-> Select Product From Table Where Sales 
+= 1250.
+-MonetDB, C-Store
+3rdApproach -> An hybrid data storeProblem DefinitionPartition the table into a row store and a 
+column store.
+-Store columns that require frequentcolumn 
+scans as a column store.
+-Store the remaining columns as a row store.
+Seems simple right???
+
+
+
+Despite lots of research, not many hybrid data stores 
+have been designed that have performance 
+comparable to existing data stores..
+
+Problem DefinitionOne major problem…
+-How do you decide which columns will require 
+frequentcolumn scans? (in real-time data stores?!)
+-How do you estimateand compare the costof 
+defining different columns as column stores?
+
+
+
+
+
+Existing column stores:
+-C-Store
+-Monet DB
+
+
+Related WorkPerformance comparisons of column stores with row 
+stores:-
+-Daniel J. Abadi,SamuelR. Madden, NabilHachem-Column stores vsrow stores: how different are they really?.
+-Alan Halverson Jennifer L. Beckmann JeffreyF. NaughtonDavid J. 
+DeWitt -A Comparison of C-Store and Row-Store in a Common 
+Framework.
+-Pat O'Neil, Betty O'Neil and Xuedong Chen-Star Schema Benchmark.
+
+
+
+Different approaches to a hybrid data store
+-Oracle 12.0c (not a pure hybrid data store.)
+-OctopusDB
+-RodentStore
+
+
+Related Work
+
+Real-time performance tuning using indexes
+-Kai-UweSattler, EikeSchallehnIngolfGeist-Towards Indexing Schemes 
+for Self-Tuning DBMS.
+
+
+
+Our ContributionWe designed an algorithm that decides:
+Given an hybrid database and a database schema, 
+which columns from among a set of given relations 
+should be stored as a column store-Based on a set of most frequent queries executed 
+on the database.
+3 steps:-
+1)Filter relevant configurations from among the set of all possible 
+divisions of the database schema into a row and a column store.
+-Based on the columns accessed by the input queries and the 
+type of access of those columns.
+2)Cost estimation of each configuration
+-An approximate estimate based on the number of tuplesthat need to be accessed.
+
+
+3)Select the configuration with the minimum cost.
+
+
+Our Algorithm:
+3 steps:-
+1)Filter relevant configurations
+2)Cost estimation of each configuration
+3)Select the configuration with the minimum cost.
+
+
+Our Algorithm:
+Our Algorithm:
+
+Input: Set of columns of different relations, Set of Queries 
+
+Output: A set of relevant divisions of these columns into row stores 
+and column stores.
+
+Based on: The number of times and the types of queries in which 
+each column appears (similar to deciding which columns need to be 
+indexed). Queries can be:-
+
+1)Insert queries
+2)Update queries
+3)Delete queries
+4)Select queries-Order by, group by, joins
+
+
+
+Our Algorithm:
+Idea: 
+Q= {set of queries}, C = {set of columns} RS ={}, CS={}
+For each column c in C 
+set c(r)=0 and c(c)=0 
+For each Query q belongs to QParse q to obtain the select, insert, update, where, 
+group by, order by clauses and their respective 
+columns on which it is applied 
+Our Algorithm:
+Idea: 
+If q is an insertquery 
+For each column c inserted 
+c(r)=c(r)+1 
+If q is an updatequery 
+For each column c updated 
+c(r)=c(r)+number of tuplesaffected by 
+queryFor each column c in where clause 
+c(c) = c(c) + no of tuplesaffected by query
+Our Algorithm:
+Idea: 
+If q is a selectquery 
+For each column c in where, order, group by 
+and join clausec(c)=c(c)+no of tuplesaffected by queryFor each column c in selectclausec(r)=c(r)+no of tuplesaffected by queryFor each column c in C 
+If (c(c) -c(r) > threshold)
+CS = CS U {c} (Store c as Column store) 
+ElseCR = CR U {c} (Store c as Row store) 
+3 steps:-
+1)Filter relevant configurations
+2)Cost estimation of each configuration
+3)Select the configuration with the minimum cost.
+
+
+Our Algorithm:
+Cost Estimation:
+Our Algorithm:
+Input: Set of relevant configurations.
+
+Output: A cost estimation for each configuration.
+
+Based on: The total number of tuplesaccessed for each query by 
+each configuration. This can be weighted by the expected number of 
+times each query is supposed to run.
+
+
+Simple Select From Where:
+Our Algorithm:
+OperationNo. of tuplesaccessed when all 
+columns stored in 
+row store
+
+No. of tuplesaccessed when k 
+Columns Stored as 
+Column Store
+
+No. of tuplesaccessed when all 
+columns stored in 
+column store
+
+i) Select 1 column 
+with where on same 
+column.
+
+m * n
+
+n
+
+n
+
+ii) Select all column 
+with where on qcolumns.
+
+q is a subset of k.
+
+m * n
+
+m*n +
+k*Cost of joining 
+remaining tuplesof 1 
+column with the 
+others.
+
+m*n + 
+m*Cost of joining 
+remaining tuplesof 1 
+column with the 
+others.
+
+iii) Select p columns 
+with where on qcolumnsq is a subset of k.
+
+m * n
+
+p*n + 
+k*Cost of joining 
+remaining tuplesof 1 
+column with the 
+other columns based 
+on row ID.
+
+p*n + 
+p*Cost of joining 
+remaining tuplesof 1 
+column with the 
+other columns based 
+on row ID.
+
+
+
+
+Select With Join
+
+Our Algorithm:
+
+Operation
+
+No. of tuplesaccessed when all 
+columns stored in 
+row store
+
+No. of tuplesaccessed when k 
+Columns Stored as 
+Column Store
+
+No. of tuplesaccessed when all 
+columns stored in 
+column store
+
+i) Select pcolumns 
+with join on any 2 
+The join columns are 
+a subset of k.
+
+m * n + 
+Cost of joining 2 
+columns with one 
+another.
+
+p*n + 
+k*Cost of joining 1 
+column with the 
+other columns based 
+on row ID.
+
+p*n + 
+p*Cost of joining 1 
+column with the 
+other columns based 
+on row ID.
+
+ii) Select pcolumns 
+with join on any qof 
+them 
+The join columns are 
+a subset of k.
+
+m * n + 
+q * Cost of joining 1 
+column with the 
+other columns based 
+on join condition.
+
+p*n + 
+k*Cost of joining 1 
+column with the 
+other columns based 
+on rowID.
+
+p*n + 
+p*Cost of joining 1 
+column with the 
+other columns based 
+on rowID.
+
+
+
+
+Aggregate Queries
+
+Our Algorithm:
+OperationNo. of tuplesaccessed when all 
+columns stored in 
+row store
+
+No. of tuplesaccessed when k 
+Columns Stored as 
+Column Store
+
+No. of tuplesaccessed when all 
+columns stored in 
+column store
+
+i) Select pcolumns 
+with aggregate 
+queries on any qof 
+them.
+
+m * n
+
+q*n + 
+p*Cost of joining 1 
+column with the 
+other columns based 
+on row ID.
+
+q*n + 
+p*Cost of joining 1 
+column with the 
+other columns based 
+on row ID.
+
+ii) Select pcolumns 
+and Group By qof 
+them.
+
+q*Sorting Time per 
+column + q*n
+
+The columns are 
+already grouped by 
+values.
+q*n + p*Cost of 
+joining 1 column with 
+the other columns 
+based on rowID.
+
+The columns are 
+already grouped by 
+values.
+q*n + p*Cost of 
+joining 1 column with 
+the other columns 
+based on rowID.
+
+
+
+
+Update, Insert and Delete
+
+Our Algorithm:
+OperationNo. of tuplesaccessed when all 
+columns stored in 
+row store
+
+No. of tuplesaccessed when k 
+Columns Stored as 
+Column Store
+
+No. of tuplesaccessed when all 
+columns stored in 
+column store
+
+Updatepcolumnswhereqcolumns
+
+Cost of simple select 
+where + 
+p updates
+
+Cost of simple select 
+where + 
+p updates
+
+Cost of simple select 
+where + 
+p updates
+
+Deletewhereqcolumns
+
+Cost of simple select 
+where + 
+1 delete
+
+Cost of simple select 
+where + 
+k + 1 deletes
+
+Cost of simple select 
+where + 
+m deletes
+
+Insert
+
+1 insert
+
+k + 1 inserts
+
+m inserts
+
+
+
+
+Results
+
+The problem:-
+-How do we verify our results?
+-There are no hybrid data stores on which we could verify 
+our resultsThe solution:-
+-Use a column-store implemented in a simple row-store-Vertical Partitioning –a crude version of a hybrid data 
+store.
+ResultsVertical Partitioning:-
+-Partition each relational table into two sets:
+1) The set of all columns to be stored as a row store are all 
+stored together in 1 table along with a row ID.
+2) The columns to be stored as a column store are each 
+stored in different tables along with a row ID for each.
+Since each column is stored as a separate table, this is effectively 
+similar to storing these columns in a column store.
+ResultsInput: 
+Database Schema:
+Buyer (email, fname, lname, country, city, state, addressID)
+Seller (semail, sfname, saddressID)
+Queries:
+->select email, fname, lnamefrom Buyer where email = ‘buyer1@usc.edu’
+->select country,city,statefrom buyer where addressid=10->select b.email, s.emailfrom Buyer b inner join Seller s on 
+b.addressid=s.addressid->select b.email, s.emailfrom buyer b,sellers where 
+b.addressid=s.addressidorder by b.email->select count(distinct addressid) from buyer->select * from buyer (Full Scan)
+Results
+
+Input: 
+Algorithm Output: 
+CR = {fname, lname, country, city, state, semail, sfname, saddressID}
+CC = {email, addressID}
+Store email and addressIDof Buyer in a column store and the remaining 
+columns in a row store.
+ResultsTest data:
+-We tested the queries on a database instance with 100,000 rows. 
+-As per our algorithm, the columns Email and AddressIDwere stored as 
+column-based stores.
+-Each query was run 100 times on a row store as well as a hybrid store 
+created based on our algorithm.
+-We also ran a full scan query of the table to compare performance 
+between our hybrid data store and the row store in the worst case.
+
+
+
+Results
+
+Total Run timeFOR100 Executionsof the Queries
+
+Row StoreHybrid Store
+
+select email, fname, lnamefrom Buyer where 
+email = ‘buyer1@usc.edu’
+
+13750ms
+
+4653ms
+
+select country,city,statefrom buyer where 
+addressid=10
+
+3168ms
+
+3069ms
+
+select b.email, s.emailfrom Buyer b inner join 
+Seller s on b.addressid=s.addressid
+
+13959ms
+
+17028ms
+
+select b.email, s.emailfrom buyer b,sellers 
+where b.addressid=s.addressidorder by b.email
+
+23166ms
+
+7722ms
+
+select count(distinct addressid) from buyer
+
+6237ms
+
+6247ms
+
+Total time
+
+60280ms
+
+38719ms
+
+select * from buyer (Full Scan)
+
+35640ms
+
+52569ms
+
+
+
+Query Timings
+
+
+Future Research
+
+1)Implementation of a database that adopts this algorithm for 
+designing hybrid databases2) Developing heuristics for accurately determining the process of 
+selection of columns to be stored as C store among the candidate 
+columns.
+3) The algorithm can even be used to work with a dynamic set of input 
+queries rather than having the queries to be known before hand.
+
+
+
+PrasanthIyer: 
+
+-Identified the problem and the solution framework.
+
+-Worked on the literature survey and created the framework 
+for testing the results.
+
+LakshmananPalaniappan: 
+
+-Worked on designing the configuration filter step.
+
+-Worked on cost estimation with Saumil.
+
+SaumilKasbekar: 
+
+-Worked on designing the cost estimation step.
+
+-Worked on the literature survey.
+
+AswinRajkumar: 
+
+-Designed the test cases for the algorithm.
+
+-Worked on the literature survey.
+
+Role of Each Member
+Any Questions???
+The End
